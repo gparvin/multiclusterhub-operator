@@ -128,9 +128,13 @@ spec:
               - get
               - list
               - watch
+            # migrations.kubevirt.io:view — keep in sync with kubevirt/kubevirt-migration-operator pkg/resources/cluster/rbac.go (getViewPolicyRules)
             - apiGroups:
               - migrations.kubevirt.io
               resources:
+              - virtualmachinestoragemigrations
+              - virtualmachinestoragemigrationplans
+              - multinamespacevirtualmachinestoragemigrations
               - multinamespacevirtualmachinestoragemigrationplans
               verbs:
               - get
@@ -286,14 +290,23 @@ spec:
               - update
               - patch
               - delete
+            # migrations.kubevirt.io:storagemigrate + storagemigrate-multins — sync with rbac.go (getStorageMigrate*PolicyRules)
             - apiGroups:
               - migrations.kubevirt.io
               resources:
+              - virtualmachinestoragemigrations
+              - virtualmachinestoragemigrationplans
+              - multinamespacevirtualmachinestoragemigrations
               - multinamespacevirtualmachinestoragemigrationplans
               verbs:
               - get
               - list
               - watch
+              - create
+              - update
+              - patch
+              - delete
+              - deletecollection
             - apiGroups:
               - observability.open-cluster-management.io
               resources:
@@ -401,6 +414,52 @@ spec:
               verbs:
               - get
               - list
+              - watch
+            # Required cluster-wide to load the OpenShift version for Compute migrations.
+            - apiGroups:
+              - config.openshift.io
+              resources:
+              - clusterversions
+              verbs:
+              - get
+              - list
+              - watch
+            # Required in the openshift-cnv namespace to display
+            # OpenShift Virtualization operator information.
+            - apiGroups:
+              - operators.coreos.com
+              resources:
+              - subscriptions
+              - clusterserviceversions
+              verbs:
+              - get
+              - list
+              - watch
+            # Required in the mtv-integrations namespace to display migration statuses.
+            - apiGroups:
+              - forklift.konveyor.io
+              resources:
+              - plans
+              verbs:
+              - get
+              - list
+              - watch
+            - apiGroups:
+              - observability.open-cluster-management.io
+              resources:
+              - multiclusterobservabilities
+              verbs:
+              - get
+              - list
+              - watch
+            - apiGroups:
+              - monitoring.coreos.com
+              resources:
+              - prometheuses/api
+              resourceNames:
+              - k8s
+              verbs:
+              - get
               - watch
         - apiVersion: rbac.authorization.k8s.io/v1
           kind: ClusterRole
@@ -543,6 +602,23 @@ spec:
               - get
               - list
               - watch
+            - apiGroups:
+              - observability.open-cluster-management.io
+              resources:
+              - multiclusterobservabilities
+              verbs:
+              - get
+              - list
+              - watch
+            - apiGroups:
+              - monitoring.coreos.com
+              resources:
+              - prometheuses/api
+              resourceNames:
+              - k8s
+              verbs:
+              - get
+              - watch
         - apiVersion: rbac.authorization.k8s.io/v1
           kind: ClusterRole
           metadata:
@@ -551,6 +627,7 @@ spec:
               clusterview.open-cluster-management.io/discoverable: "true"
             name: acm-vm-cluster-migration:view
           rules:
+            # Required cluster-wide to load the OpenShift version for Compute migrations.
             - apiGroups:
               - config.openshift.io
               resources:
@@ -559,11 +636,22 @@ spec:
               - get
               - list
               - watch
+            # Required in the openshift-cnv namespace to display
+            # OpenShift Virtualization operator information.
             - apiGroups:
               - operators.coreos.com
               resources:
               - subscriptions
               - clusterserviceversions
+              verbs:
+              - get
+              - list
+              - watch
+            # Required in the mtv-integrations namespace to display migration statuses.
+            - apiGroups:
+              - forklift.konveyor.io
+              resources:
+              - plans
               verbs:
               - get
               - list
